@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ultra-Advanced Custom Video Player</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+    body {
+      background-color: #121212;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      font-family: 'Roboto', sans-serif;
+    }
+
+    .video-container {
+      position: relative;
+      width: 720px;
+      max-width: 90%;
+      background: #000;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    video {
+      width: 100%;
+      display: block;
+    }
+
+    .controls {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .video-container:hover .controls {
+      opacity: 1;
+    }
+    .video-logo {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  width: 60px; /* Adjust based on your logo's size */
+  opacity: 0.8; /* Slight transparency for a modern look */
+  z-index: 2;
+  transition: opacity 0.3s;
+}
+
+.video-container:hover .video-logo {
+  opacity: 1; /* Enhance visibility when controls are active */
+}
+
+
+    .control-btn {
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-size: 18px;
+      transition: transform 0.2s;
+    }
+
+    .control-btn:hover {
+      transform: scale(1.1);
+    }
+
+    .seek-bar {
+      flex: 1;
+      margin: 0 10px;
+      cursor: pointer;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 5px;
+      background: #555;
+      outline: none;
+      border-radius: 5px;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      background: #00e5ff;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .tooltip {
+      position: absolute;
+      background-color: #00e5ff;
+      color: #000;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      visibility: hidden;
+      transform: translateX(-50%);
+    }
+
+    /* Loading Animation */
+    .loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 24px;
+      display: none;
+    }
+
+    .fullscreen-btn {
+      font-size: 20px;
+    }
+
+    /* Light Mode */
+    .light-mode {
+      background-color: #f0f0f0;
+      color: #000;
+    }
+  </style>
+</head>
+<body>
+  <div class="video-container" id="video-container">
+  <img src="new aj.png" alt="Logo" class="video-logo">
+
+    <video id="video" src="https://go.springsfern.in/dl/1017900/Adios Amigo 2024 1080p SS WEB DL DD+5 1 Atmos x264 S-@mntgx..mkv" preload="metadata"></video>
+    <div class="loading" id="loading">Loading...</div>
+    <div class="controls">
+      <button id="play-pause" class="control-btn"><i class="fas fa-play"></i></button>
+      <input type="range" id="seek-bar" class="seek-bar" value="0">
+      <span id="time">00:00 / 00:00</span>
+      <button id="mute-btn" class="control-btn"><i class="fas fa-volume-up"></i></button>
+      <input type="range" id="volume-bar" class="volume-bar" value="1" step="0.1" max="1">
+      <button id="pip-btn" class="control-btn"><i class="fas fa-external-link-alt"></i></button>
+      <button id="fullscreen-btn" class="control-btn fullscreen-btn"><i class="fas fa-expand"></i></button>
+    </div>
+  </div>
+
+<script>
+  const video = document.getElementById("video");
+  const playPauseBtn = document.getElementById("play-pause");
+  const seekBar = document.getElementById("seek-bar");
+  const timeDisplay = document.getElementById("time");
+  const muteBtn = document.getElementById("mute-btn");
+  const volumeBar = document.getElementById("volume-bar");
+  const fullscreenBtn = document.getElementById("fullscreen-btn");
+  const pipBtn = document.getElementById("pip-btn");
+  const loadingIndicator = document.getElementById("loading");
+
+  // Play/Pause functionality
+  playPauseBtn.addEventListener("click", () => {
+    if (video.paused) {
+      video.play();
+      playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+    } else {
+      video.pause();
+      playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+    }
+  });
+
+  // Update the play button based on video state
+  video.addEventListener("play", () => {
+    playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+  });
+
+  video.addEventListener("pause", () => {
+    playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+  });
+
+  // Update seek bar as video plays
+  video.addEventListener("timeupdate", () => {
+    const value = (video.currentTime / video.duration) * 100;
+    seekBar.value = value;
+    updateTimeDisplay();
+  });
+
+  // Ensure seek bar updates smoothly
+  seekBar.addEventListener("input", () => {
+    const time = (seekBar.value / 100) * video.duration;
+    video.currentTime = time;
+  });
+
+  // Mute functionality
+  muteBtn.addEventListener("click", () => {
+    video.muted = !video.muted;
+    muteBtn.innerHTML = video.muted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
+  });
+
+  // Volume control
+  volumeBar.addEventListener("input", () => {
+    video.volume = volumeBar.value;
+    video.muted = volumeBar.value === "0";
+    muteBtn.innerHTML = video.muted ? '<i class="fas fa-volume-mute"></i>' : '<i class="fas fa-volume-up"></i>';
+  });
+
+  // Fullscreen functionality
+  fullscreenBtn.addEventListener("click", () => {
+    if (!document.fullscreenElement) {
+      video.requestFullscreen();
+      fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
+    } else {
+      document.exitFullscreen();
+      fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
+    }
+  });
+
+  // Picture-in-Picture functionality
+  pipBtn.addEventListener("click", async () => {
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else {
+        await video.requestPictureInPicture();
+      }
+    } catch (error) {
+      console.error("Picture-in-Picture failed:", error);
+    }
+  });
+
+  // Loading indicator visibility
+  video.addEventListener('waiting', () => {
+    loadingIndicator.style.display = 'block';
+  });
+
+  video.addEventListener('playing', () => {
+    loadingIndicator.style.display = 'none';
+  });
+
+  // Function to update time display
+  function updateTimeDisplay() {
+    const formatTime = (time) => {
+      if (isNaN(time)) return "00:00";
+      const minutes = Math.floor(time / 60).toString().padStart(2, "0");
+      const seconds = Math.floor(time % 60).toString().padStart(2, "0");
+      return `${minutes}:${seconds}`;
+    };
+    const currentTime = formatTime(video.currentTime);
+    const duration = formatTime(video.duration);
+    timeDisplay.textContent = `${currentTime} / ${duration}`;
+  }
+
+  // Initialize time display on metadata load
+  video.addEventListener("loadedmetadata", updateTimeDisplay);
+
+</script>
+
+</body>
+</html>
